@@ -1,6 +1,7 @@
 import jester
 import jsony
-
+import std/math
+  
 type Customizations = object
   apiversion: string
   author: string
@@ -71,6 +72,8 @@ type Move = object
   move: string
   shout: string
 
+var game: Game 
+  
 proc snakeProperties(): Customizations =
   result.apiversion = "1"
   result.author = "sotolf"
@@ -79,11 +82,42 @@ proc snakeProperties(): Customizations =
   result.tail = "round-bum"
   result.version = "0.0.1 beta"
 
-proc makeMove(): Move =
-  result.move = "Up"
-  result.shout = "Going Up"
+proc manhattan(this: Coord, other: Coord): int =
+  abs(this.x - other.x) + abs(this.y - other.y)
 
-var game: Game 
+proc findClosestFood(): Coord =
+  let head = game.you.head
+  var foods = game.board.food
+  var shortestDistance = game.board.height + game.board.width
+
+  for food in foods:
+    let distance = manhattan(head, food)
+    if distance < shortestDistance:
+      result = food
+
+proc moveTowards(head: Coord, goal: Coord): string =
+  let body = game.you.body
+  if head.x < goal.x and Coord(x: head.x+1, y: head.y) not in body:
+    return "Left"
+  if head.x > goal.x and Coord(x: head.x-1, y: head.y) not in body:
+    return "Right"
+  if head.y < goal.y and Coord(x: head.x, y: head.y + 1) not in body:
+    return "Up"
+  if head.y > goal.y and Coord(x: head.x, y: head.y - 1) not in body:
+    return "Down"
+
+  else:
+    return "Up"
+    
+
+proc makeMove(): Move =
+  let head = game.you.head
+  let goal = findClosestFood()
+  direction = moveTowards(head, goal)
+  result.move = direction
+  result.shout = "Going towards " & direction
+
+
 
 routes:
   get "/":
