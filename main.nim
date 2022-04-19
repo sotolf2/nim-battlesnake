@@ -74,9 +74,9 @@ type Move = object
 proc snakeProperties(): Customizations =
   result.apiversion = "1"
   result.author = "sotolf"
-  result.color = "#cccccc"
-  result.head = "default"
-  result.tail = "default"
+  result.color = "#A3BE8C"
+  result.head = "caffeine"
+  result.tail = "round-bum"
   result.version = "0.0.1 beta"
 
 proc makeMove(): Move =
@@ -90,15 +90,16 @@ routes:
     let snakeProperties = snakeProperties()
     resp(Http200, toJson(snakeProperties))
 
-  get "/start":
+  post "/start":
     game = request.body.fromJson(Game)
-    resp(Http200, request.body)
+    resp(Http200, $request)
 
-  get "/move":
+  post "/move":
     game = request.body.fromJson(Game)
     var move = makeMove()
+    echo $game.you.head
     resp(Http200, toJson(move))
 
-  get "/end":
+  post "/end":
     game = request.body.fromJson(Game)
     resp(Http200, "Ended")
