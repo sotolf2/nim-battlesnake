@@ -1,6 +1,6 @@
 import jester
 import jsony
-import std/math
+#import std/math
   
 type Customizations = object
   apiversion: string
@@ -96,26 +96,25 @@ proc findClosestFood(): Coord =
       result = food
 
 proc moveTowards(head: Coord, goal: Coord): string =
-  let body = game.you.body
-  if head.x < goal.x and Coord(x: head.x+1, y: head.y) not in body:
-    return "Left"
-  if head.x > goal.x and Coord(x: head.x-1, y: head.y) not in body:
-    return "Right"
-  if head.y < goal.y and Coord(x: head.x, y: head.y + 1) not in body:
-    return "Up"
-  if head.y > goal.y and Coord(x: head.x, y: head.y - 1) not in body:
-    return "Down"
+  if head.x < goal.x and Coord(x: head.x+1, y: head.y) notin game.you.body:
+    return "right"
+  if head.x > goal.x and Coord(x: head.x-1, y: head.y) notin game.you.body:
+    return "left"
+  if head.y < goal.y and Coord(x: head.x, y: head.y + 1) notin game.you.body:
+    return "up"
+  if head.y > goal.y and Coord(x: head.x, y: head.y - 1) notin game.you.body:
+    return "down"
 
   else:
-    return "Up"
+    return "up"
     
 
 proc makeMove(): Move =
   let head = game.you.head
   let goal = findClosestFood()
-  direction = moveTowards(head, goal)
+  let direction = moveTowards(head, goal)
   result.move = direction
-  result.shout = "Going towards " & direction
+  result.shout = $goal
 
 
 
@@ -130,9 +129,11 @@ routes:
 
   post "/move":
     game = request.body.fromJson(Game)
+    echo "Turn: " & $game.turn
     var move = makeMove()
-    echo $game.you.head
-    resp(Http200, toJson(move))
+    echo $toJson(move)
+    resp(Http200, toJson(move), contentType="application/json")
+    
 
   post "/end":
     game = request.body.fromJson(Game)
