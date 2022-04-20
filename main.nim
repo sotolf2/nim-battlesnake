@@ -1,5 +1,6 @@
 import jester
 import jsony
+import std/sets
 #import std/math
   
 type Customizations = object
@@ -82,6 +83,9 @@ proc snakeProperties(): Customizations =
   result.tail = "round-bum"
   result.version = "0.0.1 beta"
 
+proc `+`(this: Coord, other: Coord): Coord =
+  return Coord(x: this.x + other.x, y: this.y + other.y)
+
 proc manhattan(this: Coord, other: Coord): int =
   abs(this.x - other.x) + abs(this.y - other.y)
 
@@ -95,24 +99,87 @@ proc findClosestFood(): Coord =
     if distance < shortestDistance:
       result = food
 
-proc moveTowards(head: Coord, goal: Coord): string =
-  if head.x < goal.x and Coord(x: head.x+1, y: head.y) notin game.you.body:
-    return "right"
-  if head.x > goal.x and Coord(x: head.x-1, y: head.y) notin game.you.body:
-    return "left"
-  if head.y < goal.y and Coord(x: head.x, y: head.y + 1) notin game.you.body:
-    return "up"
-  if head.y > goal.y and Coord(x: head.x, y: head.y - 1) notin game.you.body:
-    return "down"
+const 
+  left  = Coord(x: -1, y: 0)
+  right = Coord(x: 1, y: 0)
+  up    = Coord(x: 0, y: 1)
+  down  = Coord(x: 0, y: -1)
 
-  else:
+proc toDirection(co: Coord): string =
+  if co == up:
     return "up"
+  if co == down:
+    return "down"
+  if co == right:
+    return "right"
+  if co == left:
+    return "left"
+  else:
+    doAssert(true, "unreachable")
+
+proc isOkay(coord: Coord): bool =
+  # is not on a snake
+  let board = game.board
+  for snake in board.snakes:
+    if coord in snake.body:
+      return false
+    if coord == snake.head:
+      return false
+
+  # is not a hazard
+  if coord in board.hazards:
+    return false
+
+  # is not outside the board
+  if coord.x < 0 or coord.y < 0:
+    return false
+  if coord.x >= board.width:
+    return false
+  if coord.y >= board.height:
+    return false
+
+  # if everything is okay the cell is okay
+  return true
+  
+
+proc moveTowards(head: Coord, goal: Coord): string =
+  var poss: Coord
+  # lower than goal
+  if head.y < goal.y:
+    poss = head + up
+    if poss.isOkay():
+      return "up"
+
+  # higher than goal
+  if head.y > goal.y:
+    poss = head + down
+    if poss.isOkay():
+      return "down"
+
+  # more right than goal
+  if head.x > goal.x:
+    poss = head + left
+    if poss.isOkay():
+      return "left"
+
+  # more left than goal
+  if head.x < goal.x:
+    poss = head + right
+    if poss.isOkay():
+      return "right"
+
+  # if none found go in first okay direction
+  for direction in [up, down, left, right]:
+    poss = head + direction
+    if poss.isOkay():
+      return direction.toDirection()
+  
     
 
 proc makeMove(): Move =
   let head = game.you.head
   let goal = findClosestFood()
-  let direction = moveTowards(head, goal)
+  let direction = head.moveTowards(goal)
   result.move = direction
   result.shout = $goal
 
